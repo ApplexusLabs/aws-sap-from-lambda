@@ -32,7 +32,7 @@ Like the other [SAP IDOC to AWS Lambda](https://github.com/ApplexusLabs/aws-sap-
 ## 1. Create REST Endpoint on SAP ECC
 For our REST service on SAP ECC, we are going to create a few structures.
 
-Next, we need to create a custom HTTP handler by creating a new class which inherits from '''CL_REST_HTTP_HANDLER'''.  There is a quite detailed tutorial for doing this over at the [SAP Blog](https://blogs.sap.com/2013/01/24/developing-a-rest-api-in-abap/) so I'm just going to hit the highlights here.
+Next, we need to create a custom HTTP handler by creating a new class which inherits from ```CL_REST_HTTP_HANDLER```.  There is a quite detailed tutorial for doing this over at the [SAP Blog](https://blogs.sap.com/2013/01/24/developing-a-rest-api-in-abap/) so I'm just going to hit the highlights here.
 '''
 method IF_REST_APPLICATION~GET_ROOT_HANDLER.
 
