@@ -203,7 +203,34 @@ We next need to create the endpoint in ```tcode:SICF``` and assign our new handl
 ![sicf](./img/sicf.png)
 
 ## 5. Create Lambda Routine to bridge API Gateway to SAP ECC
-The Lambda routine is just a simple call out to the REST services.  The specific code is located [in this repository] 
+The Lambda routine is just a simple call out to the REST services.  The specific code is located [in this repository] (./tree/master/src/lambda).  There is a bit of a nuence in needing to fetch a CSRF token.  You can see this in the ```sapapi.js``` file.
+
+```javascript
+...
+var headers = {
+			'Authorization': sAuth,
+			'x-csrf-token': "fetch"
+		};
+
+		var options = {
+			host: extsys.host,
+			port: extsys.port,
+			path: endpoint,
+			method: "GET",
+			headers: headers
+		};
+
+		var req = http.request(options, function (res) {
+			resolve(res);
+		});
+...
+```
+Then in the POST header:
+```javascript
+...
+headers['X-CSRF-Token'] = oGetRes.headers['x-csrf-token'];
+...
+```
 
 ## 6. Create API Gateway as the Front Endpoint
 
