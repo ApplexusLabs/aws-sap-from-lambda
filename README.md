@@ -17,9 +17,9 @@ The problem comes when you want to expose that real-time visibility to public-fa
 
 Well, this really isn't "real-time inventory" as your shadow copy is most likely out of phase with your SAP ECC copy.  If you take orders online, you still have a chance that inventory could be sold or transfered out from under that sales order leading to customer disappointment.
 
-Using AWS API Gateway and Lamdba, we can build a service that reaches back into SAP ECC real-time to fetch the inventory.  Like a good lean warehouse, our warehouse processes are on a regular schedule--they don't randomly do activities.  Rather, they have waves of activities.  Receipts are done during a certain time.  Allocation runs are done on a fixed schedule.  Inventory is picked, packed and shipped on a given schedule.  Given how all these processes are interlaced, we know that inventory only significantly changes in certain intervals--lets say 10 minutes.
+Using AWS API Gateway and Lamdba, we can build a service that reaches back into SAP ECC real-time to fetch the inventory.  Like a good lean warehouse, our warehouse processes are on a regular schedule--they don't randomly do activities.  Rather, they have waves of activities.  Receipts are done during a certain time.  Allocation runs are done on a fixed schedule.  Inventory is picked, packed and shipped on a given schedule.  Given how all these processes are interlaced, we know that inventory only significantly changes in certain intervals--lets say 30 minutes.
 
-So, that means that we don't really have to call back to the SAP ECC system for every single query if we get the same query within a 10 minute period of time...we can cache the response.   AWS API Gateway allows us to do exactly that via its caching functionality!  We improve the response time to the calling application and reduce load on our ERP system too!
+So, that means that we don't really have to call back to the SAP ECC system for every single query if we get the same query within a 30 minute period of time...we can cache the response.   AWS API Gateway allows us to do exactly that via its caching functionality!  We improve the response time to the calling application and reduce load on our ERP system too!
 
 Like the other [SAP IDOC to AWS Lambda](https://github.com/ApplexusLabs/aws-sap-idoc-tricks) write-up, this is not meant to be production ready as-is.  We're not implementing any security, no encryption and no graceful failure if the SAP ECC endpoint is offline.  These types of things are well documented in other tutorials.  This is just meant to be a study in the specific interaction and integration between SAP Netweaver and AWS Services.
 
@@ -233,7 +233,7 @@ headers['X-CSRF-Token'] = oGetRes.headers['x-csrf-token'];
 ```
 
 ## 6. Create API Gateway as the Front Endpoint
-We can now create the API Gateway that will catch the external calls and route them to the Lambda routing.  Notice that here I'm using a combination of URL Paths and Query Strings parameters.  No real reason other than just to show you can mix and match.  They are all just parameters in the ```$input.param``` variable from the API Gateway.
+We can now create the API Gateway that will catch the external calls and route them to the Lambda routine.  Notice that here I'm using a combination of URL Paths and Query String parameters.  No real reason other than just to show you can mix and match.  They are all just parameters in the ```$input.params``` variable from the API Gateway.
 
 ![apigw-setup](./img/apigw-setup.png)
 
@@ -242,4 +242,16 @@ Here you can see that we test out the call and we're able to get back an invento
 ![apigw-test](./img/apigw-test.png)
 
 ## 7. Implement Caching on the API Gateway
-Now for the easy part--caching.   
+Now for the easy part--caching.  It literally is checking a few boxes.  First, we tell API Gateway to use all our parameters as cache keys:
+
+![cache-params](./img/cache-params.png)
+
+Next we enable caching in the stage deployment:
+
+![cache-api](./img/cache-api.png)
+
+In this case, I set Time-To-Live (TTL) as 15 minutes.  With our original scenario assumption that inventory doesn't change any more frequent than a 30 minute "takt time", 15 minutes lets us be no more out of phase than 15 minutues.   The maximum TTL for API Gatway is 60 minutes.
+
+As an optimization, you could set the max TTL as 60 minutes and then trigger a cache flush on a given cache key when an event occurs.  Lets say that 80% of your products are slow-moving from an inventory standpoint, while 15% turnover moderately fast and 5% turnover very fast.   One TTL duration doesn't fit all turnover velocities.   Using standard SAP functionality of output determination to trigger an outbound IDOC and using what we detail in our article ["Integrating SAP's IDOC Interface into AWS API Gateway and AWS Lambda"](https://github.com/ApplexusLabs/aws-sap-idoc-tricks), you could write a Lambda routine that catches that goods movement IDOC and flushes the cache of the API Gateway for that specific cache key.
+
+That would get you as close as you possibly could be to being able to serve up real-time inventory and leverage API Gatway caching to minimize the load on your backend SAP ECC system.
