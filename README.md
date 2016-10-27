@@ -24,13 +24,21 @@ So, that means that we don't really have to call back to the SAP ECC system for 
 Like the other [SAP IDOC to AWS Lambda](https://github.com/ApplexusLabs/aws-sap-idoc-tricks) write-up, this is not meant to be production ready as-is.  We're not implementing any security, no encryption and no graceful failure if the SAP ECC endpoint is offline.  These types of things are well documented in other tutorials.  This is just meant to be a study in the specific interaction and integration between SAP Netweaver and AWS Services.
 
 ## The Steps
-1. Create REST endpoint on SAP ECC to receive the call
-2. Create the backing ABAP code behind the SAP ECC REST endpoint
-3. Create Lambda routine to call the SAP ECC service
-4. Create API Gateway as the front endpoint
-5. Implement Caching on the API Gateway
+1. Create some structures for the REST service
+2. Create REST endpoint on SAP ECC to receive the call
+3. Create the backing ABAP code behind the SAP ECC REST endpoint
+4. Configure the REST endpoint in SICF
+5. Create Lambda routine to call the SAP ECC service
+6. Create API Gateway as the front endpoint
+7. Implement Caching on the API Gateway
 
-## 1. Create REST Endpoint on SAP ECC
+## 1. Create some structures for the REST services
+We need to create a couple strutures...one for the request and one for the response.
+![stock_req](./img/stock_req.png)
+
+![stock_res](./img/stock_res.png)
+
+## 2. Create REST Endpoint on SAP ECC
 For our REST service on SAP ECC, we are going to create a few structures.
 
 Next, we need to create a custom HTTP handler ```ZCL_AWS1_REST_HANDLER``` by creating a new class which inherits from ```CL_REST_HTTP_HANDLER```.  There is a quite detailed tutorial for doing this over at the [SAP Community Blog](https://blogs.sap.com/2013/01/24/developing-a-rest-api-in-abap/) so I'm just going to hit the highlights here.
@@ -42,7 +50,7 @@ method IF_REST_APPLICATION~GET_ROOT_HANDLER.
   ro_root_handler = lo_handler.
 endmethod.
 ```
-## 2. Create the backing ABAP code behind the SAP ECC REST endpoint
+## 3. Create the backing ABAP code behind the SAP ECC REST endpoint
 We need to create a ```GET``` and ```POST``` method for our new ```/stock``` endpoint.  We redefine the ```IF_REST_RESOURCE~GET``` method to fetch the CSRF token.
 
 ```abap
@@ -189,8 +197,14 @@ METHOD _get_stock.
 ENDMETHOD.
 ```
 
-## 3. Create Lambda Routine to bridge API Gateway to SAP ECC
+## 4. Configure the REST endpoint in SICF
+We next need to create the endpoint in ```tcode:SICF``` and assign our new handler class to the endpoint.
 
-## 4. Create API Gateway as the Front Endpoint
+![sicf](./img/sicf.png)
 
-## 5. Implement Caching on the API Gateway
+## 5. Create Lambda Routine to bridge API Gateway to SAP ECC
+The Lambda routine is just a simple call out to the REST services.  The specific code is located [in this repository] 
+
+## 6. Create API Gateway as the Front Endpoint
+
+## 7. Implement Caching on the API Gateway
