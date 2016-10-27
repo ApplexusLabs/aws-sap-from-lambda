@@ -1,9 +1,12 @@
-# aws-sap-from-lambda
-Calling into SAP Netweaver from AWS Lambda
+# Calling into SAP Netweaver from AWS Lambda
 
-Introduction in words
+One of the challenges of acheiving the coveted "real-time inventory visibility" for public-facing applications is that it is nearly impossible to acheive.  Let's say that SAP ECC was your source of record for inventory and you indeed used all the local business processes to get that perpetual invnetory view.  You use sales orders, material movements, warehouse management features...Great!
 
-The objective of this project is to create an API Gateway front-end for accessing data from a backend SAP Netweaver system.  
+The problem comes when you want to expose that real-time visibility to public-facing applications like a mobile app or web site.  Most implementations get around this by replicating a copy of inventory into a special "offline" copy that gets updated every so often.  This way, your public apps are hitting this shadow copy of inventory.
+
+Well, this really isn't "real-time inventory" as your shadow copy is most likely out of phase with your SAP ECC copy.  If you take orders online, you still have a chance that inventory could be sold or transfered out from under that sales order leading to customer disappointment.
+
+I wanted to create a mashup between AWS API Gateway and SAP ECC to achive a caching inventory lookup service that might be able to front-end to public apps.
 
 ## Objectives
 - Has to be serverless (except for the SAP server)
@@ -11,17 +14,12 @@ The objective of this project is to create an API Gateway front-end for accessin
 - Able to cache responses to reduce calls to the back-end ERP system
 
 ## The Design
-One of the challenges of acheiving the coveted "real-time inventory visibility" for public-facing applications is that it is nearly impossible to acheive.  Let's say that SAP ECC was your source of record for inventory and you indeed used all the local business processes to get that perpetual invnetory view.  You use sales orders, material movements, warehouse management features...Great!
 
-The problem comes when you want to expose that real-time visibility to public-facing applications like a mobile app or web site.  Most implementations get around this by replicating a copy of inventory into a special "offline" copy that gets updated every so often.  This way, your public apps are hitting this shadow copy of inventory.
-
-Well, this really isn't "real-time inventory" as your shadow copy is most likely out of phase with your SAP ECC copy.  If you take orders online, you still have a chance that inventory could be sold or transfered out from under that sales order leading to customer disappointment.
-
-Using AWS API Gateway and Lamdba, we can build a service that reaches back into SAP ECC real-time to fetch the inventory.  Like a good lean warehouse, our warehouse processes are on a regular schedule--they don't randomly do activities.  Rather, they have waves of activities.  Receipts are done during a certain time.  Allocation runs are done on a fixed schedule.  Inventory is picked, packed and shipped on a given schedule.  Given how all these processes are interlaced, we know that inventory only significantly changes in certain intervals--lets say 30 minutes.
+Using AWS API Gateway and Lamdba, we can build a service that reaches back into SAP ECC real-time to fetch the inventory.  Like a good lean warehouse, our warehouse processes are on a regular schedule--they don't randomly do activities.  Rather, they have waves of activities.  Receipts are done during a certain time.  Allocation runs are done on a fixed schedule.  Inventory is picked, packed and shipped on a given schedule.  Given how all these processes are interlaced, we know that inventory only significantly changes in certain intervals--lets say 30 minutes.  (In reality, many enterprises have disparate systems that impact inventory and have batch processes that try to reconcile periodically.)
 
 So, that means that we don't really have to call back to the SAP ECC system for every single query if we get the same query within a 30 minute period of time...we can cache the response.   AWS API Gateway allows us to do exactly that via its caching functionality!  We improve the response time to the calling application and reduce load on our ERP system too!
 
-Like the other [SAP IDOC to AWS Lambda](https://github.com/ApplexusLabs/aws-sap-idoc-tricks) write-up, this is not meant to be production ready as-is.  We're not implementing any security, no encryption and no graceful failure if the SAP ECC endpoint is offline.  These types of things are well documented in other tutorials.  This is just meant to be a study in the specific interaction and integration between SAP Netweaver and AWS Services.
+This is not meant to be production ready as-is.  We're not implementing any security, no encryption and no graceful failure if the SAP ECC endpoint is offline.  Before you try to implement this in a production environment, please consider these other things as well.  This document is just meant to be a study in the specific interaction and integration between SAP Netweaver and AWS Services and hopefully inspires someone to riff on this idea too.
 
 ## The Steps
 1. Create some structures for the REST service
