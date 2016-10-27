@@ -203,7 +203,7 @@ We next need to create the endpoint in ```tcode:SICF``` and assign our new handl
 ![sicf](./img/sicf.png)
 
 ## 5. Create Lambda Routine to bridge API Gateway to SAP ECC
-The Lambda routine is just a simple call out to the REST services.  The specific code is located [in this repository] (./tree/master/src/lambda).  There is a bit of a nuence in needing to fetch a CSRF token.  You can see this in the ```sapapi.js``` file.
+The Lambda routine is just a simple call out to the REST services.  The specific code is located [in this repository] (./tree/master/src/lambda).  There is a bit of a trick in needing to fetch a CSRF token.  You can see this in the ```sapapi.js``` file.
 
 ```javascript
 ...
@@ -233,5 +233,13 @@ headers['X-CSRF-Token'] = oGetRes.headers['x-csrf-token'];
 ```
 
 ## 6. Create API Gateway as the Front Endpoint
+We can now create the API Gateway that will catch the external calls and route them to the Lambda routing.  Notice that here I'm using a combination of URL Paths and Query Strings parameters.  No real reason other than just to show you can mix and match.  They are all just parameters in the ```$input.param``` variable from the API Gateway.
+
+![apigw-setup](./img/apigw-setup.png)
+
+Here you can see that we test out the call and we're able to get back an inventory number.
+
+![apigw-test](./img/apigw-test.png)
 
 ## 7. Implement Caching on the API Gateway
+Now for the easy part--caching.   
